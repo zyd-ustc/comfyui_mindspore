@@ -419,7 +419,7 @@ def free_memory(memory_required, device, keep_loaded=[]):
     return unloaded_models
 
 def load_models_gpu(models, memory_required=0, force_patch_weights=False, minimum_memory_required=None, force_full_load=False):
-    raise NotImplementedError
+    return
 
 def load_model_gpu(model):
     return load_models_gpu([model])

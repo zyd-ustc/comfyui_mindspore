@@ -10,7 +10,8 @@ from enum import Enum
 from typing import List, Literal, NamedTuple, Optional, Union
 import asyncio
 
-import torch
+import mindspore
+from mindspore import mint
 
 import comfy.model_management
 import nodes
@@ -398,6 +399,8 @@ def format_value(x):
         return None
     elif isinstance(x, (int, float, bool, str)):
         return x
+    elif isinstance(x, mindspore.Tensor):
+        return x.numpy()
     else:
         return str(x)
 
@@ -674,7 +677,7 @@ class PromptExecutor:
         self.status_messages = []
         self.add_message("execution_start", { "prompt_id": prompt_id}, broadcast=False)
 
-        with torch.inference_mode():
+        with mindspore._no_grad():
             dynamic_prompt = DynamicPrompt(prompt)
             reset_progress_state(prompt_id, dynamic_prompt)
             add_progress_handler(WebUIProgressHandler(self.server))

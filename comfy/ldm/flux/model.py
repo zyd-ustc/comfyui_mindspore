@@ -239,7 +239,7 @@ class Flux(nn.Cell):
         _out_1 = img_ids.view(1, _h*_w, _c).expand((_b, _h*_w, _c))
         return img, _out_1
 
-    def forward(self, x, timestep, context, y=None, guidance=None, ref_latents=None, control=None, transformer_options={}, **kwargs):
+    def construct(self, x, timestep, context, y=None, guidance=None, ref_latents=None, control=None, transformer_options={}, **kwargs):
         return comfy.patcher_extension.WrapperExecutor.new_class_executor(
             self._forward,
             self,

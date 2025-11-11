@@ -57,7 +57,7 @@ class NestedTensor:
         return self.apply_operation(None, lambda x, y: x.chunk(*args, **kwargs))
 
     def size(self):
-        return self.tensors[0].size()
+        return self.tensors[0].shape
 
     @property
     def shape(self):

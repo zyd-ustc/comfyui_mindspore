@@ -45,7 +45,7 @@ class AbstractLowScaleModel(mindspore.nn.Cell):
             if seed is None:
                 noise = mint.randn_like(x_start)
             else:
-                noise = mint.randn(x_start.size(), dtype=x_start.dtype, generator=mindspore.manual_seed(seed))
+                noise = mint.randn(x_start.shape, dtype=x_start.dtype, generator=mindspore.manual_seed(seed))
         return (extract_into_tensor(self.sqrt_alphas_cumprod, t, x_start.shape) * x_start +
                 extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape) * noise)
 

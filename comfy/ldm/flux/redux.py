@@ -16,7 +16,7 @@ class ReduxImageEncoder(mindspore.nn.Cell):
         super().__init__()
 
         self.redux_dim = redux_dim
-        self.device = device
+        self.device = None  #device
         self.dtype = dtype
 
         self.redux_up = ops.Linear(redux_dim, txt_in_features * 3, dtype=dtype)

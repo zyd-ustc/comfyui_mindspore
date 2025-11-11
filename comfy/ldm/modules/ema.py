@@ -18,7 +18,7 @@ class LitEma(mint.nn.Cell):
                 # remove as '.'-character is not allowed in buffers
                 s_name = name.replace('.', '')
                 self.m_name2s_name.update({name: s_name})
-                self.register_buffer(s_name, p.clone().detach().data)
+                self.register_buffer(s_name, p.clone().data)
 
         self.collected_params = []
 

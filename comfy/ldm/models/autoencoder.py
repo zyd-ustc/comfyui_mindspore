@@ -71,7 +71,7 @@ class AbstractAutoencoder(mindspore.nn.Cell):
     @contextmanager
     def ema_scope(self, context=None):
         if self.use_ema:
-            self.model_ema.store(self.parameters())
+            self.model_ema.store(list([p for p in self.get_parameters()]))
             self.model_ema.copy_to(self)
             if context is not None:
                 logging.info(f"{context}: Switched to EMA weights")
@@ -79,7 +79,7 @@ class AbstractAutoencoder(mindspore.nn.Cell):
             yield None
         finally:
             if self.use_ema:
-                self.model_ema.restore(self.parameters())
+                self.model_ema.restore(list([p for p in self.get_parameters()]))
                 if context is not None:
                     logging.info(f"{context}: Restored training weights")
 

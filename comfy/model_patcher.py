@@ -633,12 +633,12 @@ class ModelPatcher:
 
     def _load_list(self):
         loading = []
-        for n, m in self.model.named_modules():
+        for n, m in self.model.cells_and_names():
             params = []
             skip = False
-            for name, param in m.named_parameters(recurse=False):
+            for name, param in m.parameters_and_names(expand=False):
                 params.append(name)
-            for name, param in m.named_parameters(recurse=True):
+            for name, param in m.parameters_and_names(expand=True):
                 if name not in params:
                     skip = True # skip random weights in non leaf modules
                     break

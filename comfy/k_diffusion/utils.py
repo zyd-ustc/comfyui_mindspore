@@ -7,9 +7,11 @@ import urllib
 import warnings
 
 from PIL import Image
-import torch
-from torch import nn, optim
-from torch.utils import data
+import mindspore
+from mindspore import mint
+from mindspore.mint import nn
+from mindspore.experimental import optim
+# from torch.utils import data
 
 
 def hf_datasets_augs_helper(examples, transform, image_key, mode='RGB'):
@@ -26,7 +28,7 @@ def append_dims(x, target_dims):
     expanded = x[(...,) + (None,) * dims_to_append]
     # MPS will get inf values if it tries to index into the new axes, but detaching fixes this.
     # https://github.com/pytorch/pytorch/issues/84364
-    return expanded.detach().clone() if expanded.device.type == 'mps' else expanded
+    return expanded
 
 
 def n_params(module):
@@ -66,7 +68,7 @@ def eval_mode(model):
     return train_mode(model, False)
 
 
-@torch.no_grad()
+@mindspore._no_grad()
 def ema_update(model, averaged_model, decay):
     """Incorporates updated model parameters into an exponential moving averaged
     version of a model. It should be called after each optimizer step."""
@@ -75,14 +77,15 @@ def ema_update(model, averaged_model, decay):
     assert model_params.keys() == averaged_params.keys()
 
     for name, param in model_params.items():
-        averaged_params[name].mul_(decay).add_(param, alpha=1 - decay)
+        averaged_params[name] = averaged_params[name].mul(decay).add(param, alpha=1 - decay)
 
     model_buffers = dict(model.named_buffers())
     averaged_buffers = dict(averaged_model.named_buffers())
     assert model_buffers.keys() == averaged_buffers.keys()
 
     for name, buf in model_buffers.items():
-        averaged_buffers[name].copy_(buf)
+        # averaged_buffers[name].copy_(buf)
+        averaged_buffers[name] = buf.copy()
 
 
 class EMAWarmup:
@@ -133,7 +136,7 @@ class EMAWarmup:
         self.last_epoch += 1
 
 
-class InverseLR(optim.lr_scheduler._LRScheduler):
+class InverseLR(optim.lr_scheduler.LRScheduler):
     """Implements an inverse decay learning rate schedule with an optional exponential
     warmup. When last_epoch=-1, sets initial lr as lr.
     inv_gamma is the number of steps/epochs required for the learning rate to decay to
@@ -174,7 +177,7 @@ class InverseLR(optim.lr_scheduler._LRScheduler):
                 for base_lr in self.base_lrs]
 
 
-class ExponentialLR(optim.lr_scheduler._LRScheduler):
+class ExponentialLR(optim.lr_scheduler.LRScheduler):
     """Implements an exponential learning rate schedule with an optional exponential
     warmup. When last_epoch=-1, sets initial lr as lr. Decays the learning rate
     continuously by decay (default 0.5) every num_steps steps.
@@ -215,70 +218,70 @@ class ExponentialLR(optim.lr_scheduler._LRScheduler):
                 for base_lr in self.base_lrs]
 
 
-def rand_log_normal(shape, loc=0., scale=1., device='cpu', dtype=torch.float32):
+def rand_log_normal(shape, loc=0., scale=1., device='cpu', dtype=mindspore.float32):
     """Draws samples from an lognormal distribution."""
-    return (torch.randn(shape, device=device, dtype=dtype) * scale + loc).exp()
+    return (mint.randn(shape, dtype=dtype) * scale + loc).exp()
 
 
-def rand_log_logistic(shape, loc=0., scale=1., min_value=0., max_value=float('inf'), device='cpu', dtype=torch.float32):
+def rand_log_logistic(shape, loc=0., scale=1., min_value=0., max_value=float('inf'), device='cpu', dtype=mindspore.float32):
     """Draws samples from an optionally truncated log-logistic distribution."""
-    min_value = torch.as_tensor(min_value, device=device, dtype=torch.float64)
-    max_value = torch.as_tensor(max_value, device=device, dtype=torch.float64)
+    min_value = mindspore.tensor(min_value, dtype=mindspore.float64)
+    max_value = mindspore.tensor(max_value, dtype=mindspore.float64)
     min_cdf = min_value.log().sub(loc).div(scale).sigmoid()
     max_cdf = max_value.log().sub(loc).div(scale).sigmoid()
-    u = torch.rand(shape, device=device, dtype=torch.float64) * (max_cdf - min_cdf) + min_cdf
+    u = mint.rand(shape, dtype=mindspore.float64) * (max_cdf - min_cdf) + min_cdf
     return u.logit().mul(scale).add(loc).exp().to(dtype)
 
 
-def rand_log_uniform(shape, min_value, max_value, device='cpu', dtype=torch.float32):
+def rand_log_uniform(shape, min_value, max_value, device='cpu', dtype=mindspore.float32):
     """Draws samples from an log-uniform distribution."""
     min_value = math.log(min_value)
     max_value = math.log(max_value)
-    return (torch.rand(shape, device=device, dtype=dtype) * (max_value - min_value) + min_value).exp()
+    return (mint.rand(shape, dtype=dtype) * (max_value - min_value) + min_value).exp()
 
 
-def rand_v_diffusion(shape, sigma_data=1., min_value=0., max_value=float('inf'), device='cpu', dtype=torch.float32):
+def rand_v_diffusion(shape, sigma_data=1., min_value=0., max_value=float('inf'), device='cpu', dtype=mindspore.float32):
     """Draws samples from a truncated v-diffusion training timestep distribution."""
     min_cdf = math.atan(min_value / sigma_data) * 2 / math.pi
     max_cdf = math.atan(max_value / sigma_data) * 2 / math.pi
-    u = torch.rand(shape, device=device, dtype=dtype) * (max_cdf - min_cdf) + min_cdf
-    return torch.tan(u * math.pi / 2) * sigma_data
+    u = mint.rand(shape, dtype=dtype) * (max_cdf - min_cdf) + min_cdf
+    return mint.tan(u * math.pi / 2) * sigma_data
 
 
-def rand_split_log_normal(shape, loc, scale_1, scale_2, device='cpu', dtype=torch.float32):
+def rand_split_log_normal(shape, loc, scale_1, scale_2, device='cpu', dtype=mindspore.float32):
     """Draws samples from a split lognormal distribution."""
-    n = torch.randn(shape, device=device, dtype=dtype).abs()
-    u = torch.rand(shape, device=device, dtype=dtype)
+    n = mint.randn(shape, dtype=dtype).abs()
+    u = mint.rand(shape, dtype=dtype)
     n_left = n * -scale_1 + loc
     n_right = n * scale_2 + loc
     ratio = scale_1 / (scale_1 + scale_2)
-    return torch.where(u < ratio, n_left, n_right).exp()
+    return mint.where(u < ratio, n_left, n_right).exp()
 
 
-class FolderOfImages(data.Dataset):
-    """Recursively finds all images in a directory. It does not support
-    classes/targets."""
+# class FolderOfImages(data.Dataset):
+#     """Recursively finds all images in a directory. It does not support
+#     classes/targets."""
 
-    IMG_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.ppm', '.bmp', '.pgm', '.tif', '.tiff', '.webp'}
+#     IMG_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.ppm', '.bmp', '.pgm', '.tif', '.tiff', '.webp'}
 
-    def __init__(self, root, transform=None):
-        super().__init__()
-        self.root = Path(root)
-        self.transform = nn.Identity() if transform is None else transform
-        self.paths = sorted(path for path in self.root.rglob('*') if path.suffix.lower() in self.IMG_EXTENSIONS)
+#     def __init__(self, root, transform=None):
+#         super().__init__()
+#         self.root = Path(root)
+#         self.transform = nn.Identity() if transform is None else transform
+#         self.paths = sorted(path for path in self.root.rglob('*') if path.suffix.lower() in self.IMG_EXTENSIONS)
 
-    def __repr__(self):
-        return f'FolderOfImages(root="{self.root}", len: {len(self)})'
+#     def __repr__(self):
+#         return f'FolderOfImages(root="{self.root}", len: {len(self)})'
 
-    def __len__(self):
-        return len(self.paths)
+#     def __len__(self):
+#         return len(self.paths)
 
-    def __getitem__(self, key):
-        path = self.paths[key]
-        with open(path, 'rb') as f:
-            image = Image.open(f).convert('RGB')
-        image = self.transform(image)
-        return image,
+#     def __getitem__(self, key):
+#         path = self.paths[key]
+#         with open(path, 'rb') as f:
+#             image = Image.open(f).convert('RGB')
+#         image = self.transform(image)
+#         return image,
 
 
 class CSVLogger:
@@ -295,19 +298,19 @@ class CSVLogger:
         print(*args, sep=',', file=self.file, flush=True)
 
 
-@contextmanager
-def tf32_mode(cudnn=None, matmul=None):
-    """A context manager that sets whether TF32 is allowed on cuDNN or matmul."""
-    cudnn_old = torch.backends.cudnn.allow_tf32
-    matmul_old = torch.backends.cuda.matmul.allow_tf32
-    try:
-        if cudnn is not None:
-            torch.backends.cudnn.allow_tf32 = cudnn
-        if matmul is not None:
-            torch.backends.cuda.matmul.allow_tf32 = matmul
-        yield
-    finally:
-        if cudnn is not None:
-            torch.backends.cudnn.allow_tf32 = cudnn_old
-        if matmul is not None:
-            torch.backends.cuda.matmul.allow_tf32 = matmul_old
+# @contextmanager
+# def tf32_mode(cudnn=None, matmul=None):
+#     """A context manager that sets whether TF32 is allowed on cuDNN or matmul."""
+#     cudnn_old = torch.backends.cudnn.allow_tf32
+#     matmul_old = torch.backends.cuda.matmul.allow_tf32
+#     try:
+#         if cudnn is not None:
+#             torch.backends.cudnn.allow_tf32 = cudnn
+#         if matmul is not None:
+#             torch.backends.cuda.matmul.allow_tf32 = matmul
+#         yield
+#     finally:
+#         if cudnn is not None:
+#             torch.backends.cudnn.allow_tf32 = cudnn_old
+#         if matmul is not None:
+#             torch.backends.cuda.matmul.allow_tf32 = matmul_old

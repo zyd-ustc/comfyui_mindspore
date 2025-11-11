@@ -54,19 +54,19 @@ class AlphaBlender(nn.Cell):
         if self.merge_strategy == "fixed":
             # make shape compatible
             # alpha = repeat(self.mix_factor, '1 -> b () t  () ()', t=t, b=bs)
-            alpha = self.mix_factor.to(device)
+            alpha = self.mix_factor
         elif self.merge_strategy == "learned":
-            alpha = mint.sigmoid(self.mix_factor.to(device))
+            alpha = mint.sigmoid(self.mix_factor)
             # make shape compatible
             # alpha = repeat(alpha, '1 -> s () ()', s = t * bs)
         elif self.merge_strategy == "learned_with_images":
             if image_only_indicator is None:
-                alpha = rearrange(mint.sigmoid(self.mix_factor.to(device)), "... -> ... 1")
+                alpha = rearrange(mint.sigmoid(self.mix_factor), "... -> ... 1")
             else:
                 alpha = mint.where(
                     image_only_indicator.bool(),
-                    mint.ones(1, 1, device=image_only_indicator.device),
-                    rearrange(mint.sigmoid(self.mix_factor.to(image_only_indicator.device)), "... -> ... 1"),
+                    mint.ones(1, 1),
+                    rearrange(mint.sigmoid(self.mix_factor), "... -> ... 1"),
                 )
             alpha = rearrange(alpha, self.rearrange_pattern)
             # make shape compatible
@@ -81,7 +81,7 @@ class AlphaBlender(nn.Cell):
         x_temporal,
         image_only_indicator=None,
     ) -> mindspore.Tensor:
-        alpha = self.get_alpha(image_only_indicator, x_spatial.device)
+        alpha = self.get_alpha(image_only_indicator, None)
         x = (
             alpha.to(x_spatial.dtype) * x_spatial
             + (1.0 - alpha).to(x_spatial.dtype) * x_temporal
@@ -209,7 +209,7 @@ def extract_into_tensor(a, t, x_shape):
 
 #     @staticmethod
 #     def backward(ctx, *output_grads):
-#         ctx.input_tensors = [x.detach().requires_grad_(True) for x in ctx.input_tensors]
+#         ctx.input_tensors = [x.requires_grad_(True) for x in ctx.input_tensors]
 #         with torch.enable_grad(), \
 #                 torch.cuda.amp.autocast(**ctx.gpu_autocast_kwargs):
 #             # Fixes a bug where the first op in run_function modifies the
@@ -241,7 +241,7 @@ def timestep_embedding(timesteps, dim, max_period=10000, repeat_only=False):
     if not repeat_only:
         half = dim // 2
         freqs = mint.exp(
-            -math.log(max_period) * mint.arange(start=0, end=half, dtype=mindspore.float32, device=timesteps.device) / half
+            -math.log(max_period) * mint.arange(start=0, end=half, dtype=mindspore.float32) / half
         )
         args = timesteps[:, None].float() * freqs[None]
         embedding = mint.cat([mint.cos(args), mint.sin(args)], dim=-1)
@@ -256,8 +256,8 @@ def zero_module(module):
     """
     Zero out the parameters of a module and return it.
     """
-    for p in module.parameters():
-        p.detach().zero_()
+    for p in module.get_parameters():
+        p.zero_()
     return module
 
 
@@ -265,8 +265,8 @@ def scale_module(module, scale):
     """
     Scale the parameters of a module and return it.
     """
-    for p in module.parameters():
-        p.detach().mul_(scale)
+    for p in module.get_parameters():
+        p.mul_(scale)
     return module
 
 
@@ -304,6 +304,6 @@ class HybridConditioner(nn.Cell):
 
 
 def noise_like(shape, device, repeat=False):
-    repeat_noise = lambda: mint.randn((1, *shape[1:]), device=device).repeat(shape[0], *((1,) * (len(shape) - 1)))
-    noise = lambda: mint.randn(shape, device=device)
+    repeat_noise = lambda: mint.randn((1, *shape[1:])).repeat(shape[0], *((1,) * (len(shape) - 1)))
+    noise = lambda: mint.randn(shape)
     return repeat_noise() if repeat else noise()

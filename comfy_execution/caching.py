@@ -3,12 +3,13 @@ import gc
 import itertools
 import psutil
 import time
-import torch
 from typing import Sequence, Mapping, Dict
 from comfy_execution.graph import DynamicPrompt
 from abc import ABC, abstractmethod
 
 import nodes
+
+import mindspore
 
 from comfy_execution.graph_utils import is_link
 
@@ -404,7 +405,7 @@ class RAMPressureCache(LRUCache):
                 for output in outputs:
                     if isinstance(output, list):
                         scan_list_for_ram_usage(output)
-                    elif isinstance(output, torch.Tensor) and output.device.type == 'cpu':
+                    elif isinstance(output, mindspore.Tensor):
                         #score Tensors at a 50% discount for RAM usage as they are likely to
                         #be high value intermediates
                         ram_usage += (output.numel() * output.element_size()) * 0.5

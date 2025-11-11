@@ -63,7 +63,7 @@ def exists(x):
 
 
 # def count_params(model, verbose=False):
-#     total_params = sum(p.numel() for p in model.parameters())
+#     total_params = sum(p.numel() for p in model.get_parameters())
 #     if verbose:
 #         logging.info(f"{model.__class__.__name__} has {total_params*1.e-6:.2f} M params.")
 #     return total_params
@@ -161,7 +161,7 @@ def get_obj_from_str(string, reload=False):
 #                         # Maintains max of all exp. moving avg. of sq. grad. values
 #                         state['max_exp_avg_sq'] = torch.zeros_like(p, memory_format=torch.preserve_format)
 #                     # Exponential moving average of parameter values
-#                     state['param_exp_avg'] = p.detach().float().clone()
+#                     state['param_exp_avg'] = p.float().clone()
 
 #                 exp_avgs.append(state['exp_avg'])
 #                 exp_avg_sqs.append(state['exp_avg_sq'])

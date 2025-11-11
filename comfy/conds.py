@@ -28,7 +28,11 @@ class CONDRegular:
         return mint.cat(conds)
 
     def size(self):
-        return list(self.cond.size())
+        return list(self.cond.shape)
+
+    @property
+    def shape(self):
+        return self.size()
 
 
 class CONDNoiseShape(CONDRegular):
@@ -125,7 +129,7 @@ class CONDList(CONDRegular):
         o = 0
         c = 1
         for c in self.cond:
-            size = c.size()
+            size = c.shape
             o += math.prod(size)
             if len(size) > 1:
                 c = size[1]

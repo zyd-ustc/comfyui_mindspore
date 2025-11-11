@@ -922,6 +922,7 @@ def load_clip(ckpt_paths, embedding_directory=None, clip_type=CLIPType.STABLE_DI
     clip_data = []
     for p in ckpt_paths:
         clip_data.append(comfy.utils.load_mindspore_file(p, safe_load=True))
+
     return load_text_encoder_state_dicts(clip_data, embedding_directory=embedding_directory, clip_type=clip_type, model_options=model_options)
 
 
@@ -1175,13 +1176,15 @@ def load_text_encoder_state_dicts(state_dicts=[], embedding_directory=None, clip
         tokenizer_data, model_options = comfy.text_encoders.long_clipl.model_options_long_clip(c, tokenizer_data, model_options)
 
     clip = CLIP(clip_target, embedding_directory=embedding_directory, parameters=parameters, tokenizer_data=tokenizer_data, model_options=model_options)
+    
     for c in clip_data:
         m, u = clip.load_sd(c)
         if len(m) > 0:
             logging.warning("clip missing: {}".format(m))
-
+    
         if len(u) > 0:
             logging.debug("clip unexpected: {}".format(u))
+
     return clip
 
 # def load_gligen(ckpt_path):

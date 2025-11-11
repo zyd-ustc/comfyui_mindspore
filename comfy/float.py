@@ -9,8 +9,7 @@ def calc_mantissa(abs_x, exponent, normal_mask, MANTISSA_BITS, EXPONENT_BIAS, ge
         (abs_x / (2.0 ** (-EXPONENT_BIAS + 1 - MANTISSA_BITS)))
     )
 
-    # mantissa_scaled += mint.rand(mantissa_scaled.size(), dtype=mantissa_scaled.dtype, layout=mantissa_scaled.layout, generator=generator)
-    mantissa_scaled += mint.rand(mantissa_scaled.size(), dtype=mantissa_scaled.dtype, generator=generator)
+    mantissa_scaled += mint.rand(mantissa_scaled.shape, dtype=mantissa_scaled.dtype, generator=generator)
     return mantissa_scaled.floor() / (2**MANTISSA_BITS)
 
 #Not 100% sure about this

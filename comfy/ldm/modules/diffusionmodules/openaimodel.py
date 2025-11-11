@@ -238,7 +238,7 @@ class ResBlock(TimestepBlock):
         :return: an [N x C x ...] Tensor of outputs.
         """
         # return checkpoint(
-        #     self._forward, (x, emb), self.parameters(), self.use_checkpoint
+        #     self._forward, (x, emb), self.get_parameters(), self.use_checkpoint
         # )
         return mindspore.recompute(self._forward, x, emb)
 

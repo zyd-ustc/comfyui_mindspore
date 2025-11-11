@@ -168,14 +168,22 @@ class DoubleStreamBlock(nn.Cell):
         img_modulated = self.img_norm1(img)
         img_modulated = apply_mod(img_modulated, (1 + img_mod1.scale), img_mod1.shift, modulation_dims_img)
         img_qkv = self.img_attn.qkv(img_modulated)
-        img_q, img_k, img_v = img_qkv.view(img_qkv.shape[0], img_qkv.shape[1], 3, self.num_heads, -1).permute(2, 0, 3, 1, 4)
+        
+        img_qkv = img_qkv.view(img_qkv.shape[0], img_qkv.shape[1], 3, self.num_heads, -1).permute(2, 0, 3, 1, 4)
+        img_q, img_k, img_v = mint.split(img_qkv, (1, 1, 1), dim=0)
+        img_q, img_k, img_v = img_q.squeeze(0), img_k.squeeze(0), img_v.squeeze(0)
+
         img_q, img_k = self.img_attn.norm(img_q, img_k, img_v)
 
         # prepare txt for attention
         txt_modulated = self.txt_norm1(txt)
         txt_modulated = apply_mod(txt_modulated, (1 + txt_mod1.scale), txt_mod1.shift, modulation_dims_txt)
         txt_qkv = self.txt_attn.qkv(txt_modulated)
-        txt_q, txt_k, txt_v = txt_qkv.view(txt_qkv.shape[0], txt_qkv.shape[1], 3, self.num_heads, -1).permute(2, 0, 3, 1, 4)
+        
+        txt_qkv = txt_qkv.view(txt_qkv.shape[0], txt_qkv.shape[1], 3, self.num_heads, -1).permute(2, 0, 3, 1, 4)
+        txt_q, txt_k, txt_v = mint.split(txt_qkv, (1, 1, 1), dim=0)
+        txt_q, txt_k, txt_v = txt_q.squeeze(0), txt_k.squeeze(0), txt_v.squeeze(0)
+
         txt_q, txt_k = self.txt_attn.norm(txt_q, txt_k, txt_v)
 
         if self.flipped_img_txt:
@@ -185,7 +193,8 @@ class DoubleStreamBlock(nn.Cell):
                              mint.cat((img_v, txt_v), dim=2),
                              pe=pe, mask=attn_mask, transformer_options=transformer_options)
 
-            img_attn, txt_attn = attn[:, : img.shape[1]], attn[:, img.shape[1]:]
+            # img_attn, txt_attn = attn[:, : img.shape[1]], attn[:, img.shape[1]:]
+            img_attn, txt_attn = mint.split(attn, (img.shape[1], attn.shape[1]-img.shape[1]), dim=1)
         else:
             # run actual attention
             attn = attention(mint.cat((txt_q, img_q), dim=2),
@@ -193,7 +202,8 @@ class DoubleStreamBlock(nn.Cell):
                              mint.cat((txt_v, img_v), dim=2),
                              pe=pe, mask=attn_mask, transformer_options=transformer_options)
 
-            txt_attn, img_attn = attn[:, : txt.shape[1]], attn[:, txt.shape[1]:]
+            # txt_attn, img_attn = attn[:, : txt.shape[1]], attn[:, txt.shape[1]:]
+            txt_attn, img_attn = mint.split(attn, (txt.shape[1], attn.shape[1]-txt.shape[1]), dim=1)
 
         # calculate the img bloks
         img += apply_mod(self.img_attn.proj(img_attn), img_mod1.gate, None, modulation_dims_img)

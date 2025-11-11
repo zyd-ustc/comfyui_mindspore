@@ -10,12 +10,12 @@ import comfy.nested_tensor
 
 def prepare_noise_inner(latent_image, generator, noise_inds=None):
     if noise_inds is None:
-        return mint.randn(latent_image.size(), dtype=latent_image.dtype, layout=latent_image.layout, generator=generator, device="cpu")
+        return mint.randn(latent_image.shape, dtype=latent_image.dtype, generator=generator)
 
     unique_inds, inverse = np.unique(noise_inds, return_inverse=True)
     noises = []
     for i in range(unique_inds[-1]+1):
-        noise = mint.randn([1] + list(latent_image.size())[1:], dtype=latent_image.dtype, layout=latent_image.layout, generator=generator, device="cpu")
+        noise = mint.randn([1] + list(latent_image.shape)[1:], dtype=latent_image.dtype, generator=generator)
         if i in unique_inds:
             noises.append(noise)
     noises = [noises[i] for i in inverse]
@@ -28,7 +28,7 @@ def prepare_noise(latent_image, seed, noise_inds=None):
     """
     generator = mindspore.manual_seed(seed)
 
-    if latent_image.is_nested:
+    if hasattr(latent_image, "is_nested") and latent_image.is_nested:
         tensors = latent_image.unbind()
         noises = []
         for t in tensors:
@@ -40,7 +40,7 @@ def prepare_noise(latent_image, seed, noise_inds=None):
     return noises
 
 def fix_empty_latent_channels(model, latent_image):
-    if latent_image.is_nested:
+    if hasattr(latent_image, "is_nested") and latent_image.is_nested:
         return latent_image
     latent_format = model.get_model_object("latent_format") #Resize the empty latent image so it has the right number of channels
     if latent_format.latent_channels != latent_image.shape[1] and mint.count_nonzero(latent_image) == 0:
@@ -57,13 +57,11 @@ def cleanup_additional_models(models):
     logging.warning("Warning: comfy.sample.cleanup_additional_models isn't used anymore and can be removed")
 
 def sample(model, noise, steps, cfg, sampler_name, scheduler, positive, negative, latent_image, denoise=1.0, disable_noise=False, start_step=None, last_step=None, force_full_denoise=False, noise_mask=None, sigmas=None, callback=None, disable_pbar=False, seed=None):
-    sampler = comfy.samplers.KSampler(model, steps=steps, device=model.load_device, sampler=sampler_name, scheduler=scheduler, denoise=denoise, model_options=model.model_options)
+    sampler = comfy.samplers.KSampler(model, steps=steps, device=None, sampler=sampler_name, scheduler=scheduler, denoise=denoise, model_options=model.model_options)
 
     samples = sampler.sample(noise, positive, negative, cfg=cfg, latent_image=latent_image, start_step=start_step, last_step=last_step, force_full_denoise=force_full_denoise, denoise_mask=noise_mask, sigmas=sigmas, callback=callback, disable_pbar=disable_pbar, seed=seed)
-    samples = samples.to(comfy.model_management.intermediate_device())
     return samples
 
 def sample_custom(model, noise, cfg, sampler, sigmas, positive, negative, latent_image, noise_mask=None, callback=None, disable_pbar=False, seed=None):
-    samples = comfy.samplers.sample(model, noise, positive, negative, cfg, model.load_device, sampler, sigmas, model_options=model.model_options, latent_image=latent_image, denoise_mask=noise_mask, callback=callback, disable_pbar=disable_pbar, seed=seed)
-    samples = samples.to(comfy.model_management.intermediate_device())
+    samples = comfy.samplers.sample(model, noise, positive, negative, cfg, None, sampler, sigmas, model_options=model.model_options, latent_image=latent_image, denoise_mask=noise_mask, callback=callback, disable_pbar=disable_pbar, seed=seed)
     return samples

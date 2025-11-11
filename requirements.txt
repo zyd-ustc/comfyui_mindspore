@@ -5,6 +5,7 @@ comfyui-embedded-docs==0.3.1
 # torchsde
 # torchvision
 # torchaudio
+mindspore==2.7.1
 numpy>=1.25.0
 einops
 transformers>=4.37.2

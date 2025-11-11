@@ -1476,7 +1476,7 @@ class EmptyLatentImage:
 #     latent_image = comfy.sample.fix_empty_latent_channels(model, latent_image)
 
 #     if disable_noise:
-#         noise = torch.zeros(latent_image.size(), dtype=latent_image.dtype, layout=latent_image.layout, device="cpu")
+#         noise = torch.zeros(latent_image.shape, dtype=latent_image.dtype)
 #     else:
 #         batch_inds = latent["batch_index"] if "batch_index" in latent else None
 #         noise = comfy.sample.prepare_noise(latent_image, seed, batch_inds)
@@ -1898,7 +1898,7 @@ class PreviewImage(SaveImage):
 #     CATEGORY = "image"
 
 #     def expand_image(self, image, left, top, right, bottom, feathering):
-#         d1, d2, d3, d4 = image.size()
+#         d1, d2, d3, d4 = image.shape
 
 #         new_image = torch.ones(
 #             (d1, d2 + top + bottom, d3 + left + right, d4),
@@ -1955,8 +1955,8 @@ NODE_CLASS_MAPPINGS = {
     # "LatentUpscaleBy": LatentUpscaleBy,
     # "LatentFromBatch": LatentFromBatch,
     # "RepeatLatentBatch": RepeatLatentBatch,
-    # "SaveImage": SaveImage,
-    # "PreviewImage": PreviewImage,
+    "SaveImage": SaveImage,
+    "PreviewImage": PreviewImage,
     # "LoadImage": LoadImage,
     # "LoadImageMask": LoadImageMask,
     # "LoadImageOutput": LoadImageOutput,

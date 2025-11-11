@@ -153,7 +153,7 @@ class SDClipModel(mindspore.nn.Cell, ClipTokenWeightEncoder):
     def freeze(self):
         self.transformer = self.transformer.set_train(False)
         #self.train = disabled_train
-        for param in self.parameters():
+        for param in self.get_parameters():
             param.requires_grad = False
 
     def set_clip_options(self, options):

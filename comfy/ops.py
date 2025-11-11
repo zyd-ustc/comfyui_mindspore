@@ -72,7 +72,7 @@ def cast_to_input(weight, input, non_blocking=False, copy=True):
     return comfy.model_management.cast_to(weight, input.dtype, non_blocking=non_blocking, copy=copy)
 
 
-def cast_bias_weight(s, input=None, dtype=None, bias_dtype=None, offloadable=False):
+def cast_bias_weight(s, input=None, dtype=None, device=None, bias_dtype=None, offloadable=False):
     # NOTE: offloadable=False is a a legacy and if you are a custom node author reading this please pass
     # offloadable=True and call uncast_bias_weight() after your last usage of the weight/bias. This
     # will add async-offload support to your cast and improve performance.
@@ -137,6 +137,10 @@ class CastWeightBiasOp:
 
 class disable_weight_init:
     class Linear(mint.nn.Linear, CastWeightBiasOp):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.reset_parameters()
+        
         def reset_parameters(self):
             return None
 
@@ -154,6 +158,10 @@ class disable_weight_init:
                 return super().construct(*args, **kwargs)
 
     class Conv1d(mint.nn.Conv1d, CastWeightBiasOp):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.reset_parameters()
+        
         def reset_parameters(self):
             return None
 
@@ -171,6 +179,10 @@ class disable_weight_init:
                 return super().construct(*args, **kwargs)
 
     class Conv2d(mint.nn.Conv2d, CastWeightBiasOp):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.reset_parameters()
+        
         def reset_parameters(self):
             return None
 
@@ -188,6 +200,10 @@ class disable_weight_init:
                 return super().construct(*args, **kwargs)
 
     class Conv3d(mint.nn.Conv3d, CastWeightBiasOp):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.reset_parameters()
+
         def reset_parameters(self):
             return None
 
@@ -211,6 +227,10 @@ class disable_weight_init:
                 return super().construct(*args, **kwargs)
 
     class GroupNorm(mint.nn.GroupNorm, CastWeightBiasOp):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.reset_parameters()
+        
         def reset_parameters(self):
             return None
 
@@ -228,6 +248,10 @@ class disable_weight_init:
                 return super().construct(*args, **kwargs)
 
     class LayerNorm(mint.nn.LayerNorm, CastWeightBiasOp):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.reset_parameters()
+        
         def reset_parameters(self):
             return None
 
@@ -249,6 +273,10 @@ class disable_weight_init:
                 return super().construct(*args, **kwargs)
 
     class RMSNorm(comfy.rmsnorm.RMSNorm, CastWeightBiasOp):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.reset_parameters()
+        
         def reset_parameters(self):
             self.bias = None
             return None
@@ -272,6 +300,10 @@ class disable_weight_init:
                 return super().construct(*args, **kwargs)
 
     class ConvTranspose2d(mint.nn.ConvTranspose2d, CastWeightBiasOp):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.reset_parameters()
+        
         def reset_parameters(self):
             return None
 
@@ -296,6 +328,10 @@ class disable_weight_init:
                 return super().construct(*args, **kwargs)
 
     # class ConvTranspose1d(mint.nn.ConvTranspose1d, CastWeightBiasOp):
+    #     def __init__(self, *args, **kwargs):
+    #         super().__init__(*args, **kwargs)
+    #         self.reset_parameters()
+
     #     def reset_parameters(self):
     #         return None
 
@@ -320,6 +356,10 @@ class disable_weight_init:
     #             return super().construct(*args, **kwargs)
 
     class Embedding(mint.nn.Embedding, CastWeightBiasOp):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.reset_parameters()
+
         def reset_parameters(self):
             self.bias = None
             return None
@@ -328,11 +368,10 @@ class disable_weight_init:
             output_dtype = out_dtype
             if self.weight.dtype == mindspore.float16 or self.weight.dtype == mindspore.bfloat16:
                 out_dtype = None
-            weight, bias = cast_bias_weight(self, device=input.device, dtype=out_dtype, offloadable=False)
-            x = mint.functional.embedding(input, weight, self.padding_idx, self.max_norm, self.norm_type, self.scale_grad_by_freq, self.sparse).to(dtype=output_dtype)
+            weight, bias = cast_bias_weight(self, dtype=out_dtype, offloadable=False)
+            x = mint.functional.embedding(input, weight, self.padding_idx, self.max_norm, self.norm_type, self.scale_grad_by_freq).to(dtype=output_dtype)
             uncast_bias_weight(self, weight, bias, None)
             return x
-
 
         def construct(self, *args, **kwargs):
             run_every_op()
@@ -429,6 +468,10 @@ def fp8_linear(self, input):
 
 # class fp8_ops(manual_cast):
 #     class Linear(manual_cast.Linear):
+#         def __init__(self, *args, **kwargs):
+#             super().__init__(*args, **kwargs)
+#             self.reset_parameters()
+
 #         def reset_parameters(self):
 #             self.scale_weight = None
 #             self.scale_input = None
@@ -456,6 +499,8 @@ def fp8_linear(self, input):
 #                 if override_dtype is not None:
 #                     kwargs['dtype'] = override_dtype
 #                 super().__init__(*args, **kwargs)
+
+#                 self.reset_parameters()
 
 #             def reset_parameters(self):
 #                 if not hasattr(self, 'scale_weight'):
@@ -495,7 +540,8 @@ def fp8_linear(self, input):
 #                 if return_weight:
 #                     return weight
 #                 if inplace_update:
-#                     self.weight.data.copy_(weight)
+#                     # self.weight.data.copy_(weight)
+#                     self.weight.set_data(weight.copy())
 #                 else:
 #                     self.weight = mindspore.Parameter(weight, requires_grad=False)
 
@@ -511,13 +557,17 @@ CUBLAS_IS_AVAILABLE = False
 # if CUBLAS_IS_AVAILABLE:
 #     class cublas_ops(disable_weight_init):
 #         class Linear(CublasLinear, disable_weight_init.Linear):
+#             def __init__(self, *args, **kwargs):
+#                 super().__init__(*args, **kwargs)
+#                 self.reset_parameters()
+
 #             def reset_parameters(self):
 #                 return None
 
 #             def forward_comfy_cast_weights(self, input):
 #                 return super().forward(input)
 
-#             def forward(self, *args, **kwargs):
+#             def construct(self, *args, **kwargs):
 #                 return super().forward(*args, **kwargs)
 
 
@@ -565,6 +615,8 @@ class MixedPrecisionOps(disable_weight_init):
 
             self.tensor_class = None
 
+            self.reset_parameters()
+
         def reset_parameters(self):
             return None
 
@@ -581,7 +633,7 @@ class MixedPrecisionOps(disable_weight_init):
             manually_loaded_keys = [weight_key]
 
             if layer_name not in MixedPrecisionOps._layer_quant_config:
-                self.weight = mindspore.Parameter(weight.to(device=device, dtype=MixedPrecisionOps._compute_dtype), requires_grad=False)
+                self.weight = mindspore.Parameter(weight.to(dtype=MixedPrecisionOps._compute_dtype), requires_grad=False)
             else:
                 quant_format = MixedPrecisionOps._layer_quant_config[layer_name].get("format", None)
                 if quant_format is None:
@@ -599,7 +651,7 @@ class MixedPrecisionOps(disable_weight_init):
                     manually_loaded_keys.append(scale_key)
 
                 self.weight = mindspore.Parameter(
-                    QuantizedTensor(weight.to(device=device, dtype=mixin["dtype"]), self.layout_type, layout_params),
+                    QuantizedTensor(weight.to(dtype=mixin["dtype"]), self.layout_type, layout_params),
                     requires_grad=False
                 )
 
@@ -608,7 +660,7 @@ class MixedPrecisionOps(disable_weight_init):
                     _v = state_dict.pop(param_key, None)
                     if _v is None:
                         continue
-                    setattr(self, param_name, mindspore.Parameter(_v.to(device=device), requires_grad=False))
+                    setattr(self, param_name, mindspore.Parameter(_v, requires_grad=False))
                     manually_loaded_keys.append(param_key)
 
             super()._load_from_state_dict(state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs)

@@ -80,8 +80,7 @@ def default_noise_sampler(x, seed=None):
     else:
         generator = None
 
-    # return lambda sigma, sigma_next: mint.randn(x.size(), dtype=x.dtype, layout=x.layout, generator=generator)
-    return lambda sigma, sigma_next: mint.randn(x.size(), dtype=x.dtype, generator=generator)
+    return lambda sigma, sigma_next: mint.randn(x.shape, dtype=x.dtype, generator=generator)
 
 
 # class BatchedBrownianTree:
@@ -414,7 +413,7 @@ def linear_multistep_coeff(order, t, i, j):
 def sample_lms(model, x, sigmas, extra_args=None, callback=None, disable=None, order=4):
     extra_args = {} if extra_args is None else extra_args
     s_in = x.new_ones([x.shape[0]])
-    sigmas_cpu = sigmas.detach().cpu().numpy()
+    sigmas_cpu = sigmas.numpy()
     ds = []
     for i in trange(len(sigmas) - 1, disable=disable):
         denoised = model(x, sigmas[i] * s_in, **extra_args)
@@ -1178,9 +1177,9 @@ def sample_ipndm_v(model, x, sigmas, extra_args=None, callback=None, disable=Non
         if len(buffer_model) == max_order - 1:
             for k in range(max_order - 2):
                 buffer_model[k] = buffer_model[k+1]
-            buffer_model[-1] = d_cur.detach()
+            buffer_model[-1] = d_cur
         else:
-            buffer_model.append(d_cur.detach())
+            buffer_model.append(d_cur)
 
     return x_next
 
@@ -1229,9 +1228,9 @@ def sample_deis(model, x, sigmas, extra_args=None, callback=None, disable=None, 
         if len(buffer_model) == max_order - 1:
             for k in range(max_order - 2):
                 buffer_model[k] = buffer_model[k+1]
-            buffer_model[-1] = d_cur.detach()
+            buffer_model[-1] = d_cur
         else:
-            buffer_model.append(d_cur.detach())
+            buffer_model.append(d_cur)
 
     return x_next
 

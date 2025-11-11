@@ -50,14 +50,14 @@ class ComfyAPI_latest(ComfyAPIBase):
             if to_display is not None:
                 # First convert to PIL Image if needed
                 if isinstance(to_display, ImageInput):
-                    # Convert ImageInput (torch.Tensor) to PIL Image
+                    # Convert ImageInput (mindspore.Tensor) to PIL Image
                     # Handle tensor shape [B, H, W, C] -> get first image if batch
                     tensor = to_display
                     if len(tensor.shape) == 4:
                         tensor = tensor[0]
 
                     # Convert to numpy array and scale to 0-255
-                    image_np = (tensor.cpu().numpy() * 255).astype(np.uint8)
+                    image_np = (tensor.numpy() * 255).astype(np.uint8)
                     to_display = Image.fromarray(image_np)
 
                 if isinstance(to_display, Image.Image):

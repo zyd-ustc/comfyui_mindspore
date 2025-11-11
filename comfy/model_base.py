@@ -724,7 +724,7 @@ class SD21UNCLIP(BaseModel):
 #             out['clip'] = comfy.conds.CONDRegular(clip_text_pooled)
 
 #         #size of prior doesn't really matter if zeros because it gets resized but I still want it to get batched
-#         prior = kwargs.get("stable_cascade_prior", mint.zeros((1, 16, (noise.shape[2] * 4) // 42, (noise.shape[3] * 4) // 42), dtype=noise.dtype, layout=noise.layout, device=noise.device))
+#         prior = kwargs.get("stable_cascade_prior", mint.zeros((1, 16, (noise.shape[2] * 4) // 42, (noise.shape[3] * 4) // 42), dtype=noise.dtype))
 
 #         out["effnet"] = comfy.conds.CONDRegular(prior.to(device=noise.device))
 #         out["sca"] = comfy.conds.CONDRegular(mint.zeros((1,)))
@@ -927,7 +927,7 @@ class Flux(BaseModel):
         out = {}
         ref_latents = kwargs.get("reference_latents", None)
         if ref_latents is not None:
-            out['ref_latents'] = list([1, 16, sum(map(lambda a: math.prod(a.size()), ref_latents)) // 16])
+            out['ref_latents'] = list([1, 16, sum(map(lambda a: math.prod(a.shape), ref_latents)) // 16])
         return out
 
 
@@ -1127,7 +1127,7 @@ class Flux(BaseModel):
 #         if image is None:
 #             shape_image = list(noise.shape)
 #             shape_image[1] = extra_channels
-#             image = mint.zeros(shape_image, dtype=noise.dtype, layout=noise.layout, device=noise.device)
+#             image = mint.zeros(shape_image, dtype=noise.dtype)
 #         else:
 #             latent_dim = self.latent_format.latent_channels
 #             image = utils.common_upscale(image.to(device), noise.shape[-1], noise.shape[-2], "bilinear", "center")
@@ -1315,7 +1315,7 @@ class Flux(BaseModel):
 #         out = {}
 #         ref_latents = kwargs.get("reference_latents", None)
 #         if ref_latents is not None:
-#             out['reference_latent'] = list([1, 16, sum(map(lambda a: math.prod(a.size()), ref_latents)) // 16])
+#             out['reference_latent'] = list([1, 16, sum(map(lambda a: math.prod(a.shape), ref_latents)) // 16])
 
 #         reference_motion = kwargs.get("reference_motion", None)
 #         if reference_motion is not None:
@@ -1455,7 +1455,7 @@ class Flux(BaseModel):
 #         out = {}
 #         ref_latents = kwargs.get("reference_latents", None)
 #         if ref_latents is not None:
-#             out['ref_latents'] = list([1, 16, sum(map(lambda a: math.prod(a.size()), ref_latents)) // 16])
+#             out['ref_latents'] = list([1, 16, sum(map(lambda a: math.prod(a.shape), ref_latents)) // 16])
 #         return out
 
 # class QwenImage(BaseModel):
@@ -1484,7 +1484,7 @@ class Flux(BaseModel):
 #         out = {}
 #         ref_latents = kwargs.get("reference_latents", None)
 #         if ref_latents is not None:
-#             out['ref_latents'] = list([1, 16, sum(map(lambda a: math.prod(a.size()), ref_latents)) // 16])
+#             out['ref_latents'] = list([1, 16, sum(map(lambda a: math.prod(a.shape), ref_latents)) // 16])
 #         return out
 
 # class HunyuanImage21(BaseModel):
@@ -1520,7 +1520,7 @@ class Flux(BaseModel):
 
 #         if image is None:
 #             shape_image = list(noise.shape)
-#             image = mint.zeros(shape_image, dtype=noise.dtype, layout=noise.layout, device=noise.device)
+#             image = mint.zeros(shape_image, dtype=noise.dtype)
 #         else:
 #             image = utils.common_upscale(image.to(device), noise.shape[-1], noise.shape[-2], "bilinear", "center")
 #             image = self.process_latent_in(image)

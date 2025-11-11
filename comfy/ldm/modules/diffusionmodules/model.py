@@ -69,7 +69,6 @@ def interpolate_up(x, scale_factor):
         out_shape = orig_shape[:2]
         for i in range(len(orig_shape) - 2):
             out_shape.append(round(orig_shape[i + 2] * scale_factor[i]))
-        # out = mint.empty(out_shape, dtype=x.dtype, layout=x.layout)
         out = mint.empty(out_shape, dtype=x.dtype)
         split = 8
         l = out.shape[1] // split

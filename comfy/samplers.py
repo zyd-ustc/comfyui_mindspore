@@ -268,9 +268,9 @@ def _calc_cond_batch(model: BaseModel, conds: list[list[dict]], x_in: mindspore.
                 input_shape = [len(batch_amount) * first_shape[0]] + list(first_shape)[1:]
                 cond_shapes = collections.defaultdict(list)
                 for tt in batch_amount:
-                    cond = {k: v.size() for k, v in to_run[tt][0].conditioning.items()}
+                    cond = {k: v.shape for k, v in to_run[tt][0].conditioning.items()}
                     for k, v in to_run[tt][0].conditioning.items():
-                        cond_shapes[k].append(v.size())
+                        cond_shapes[k].append(v.shape)
 
                 if model.memory_required(input_shape, cond_shapes=cond_shapes) * 1.5 < free_memory:
                     to_batch = batch_amount
@@ -1006,7 +1006,7 @@ class CFGGuider:
         if sigmas.shape[-1] == 0:
             return latent_image
 
-        if latent_image.is_nested:
+        if hasattr(latent_image, "is_nested") and latent_image.is_nested:
             latent_image, latent_shapes = comfy.utils.pack_latents(latent_image.unbind())
             noise, _ = comfy.utils.pack_latents(noise.unbind())
         else:
@@ -1045,11 +1045,11 @@ class CFGGuider:
         return output
 
 
-# def sample(model, noise, positive, negative, cfg, device, sampler, sigmas, model_options={}, latent_image=None, denoise_mask=None, callback=None, disable_pbar=False, seed=None):
-#     cfg_guider = CFGGuider(model)
-#     cfg_guider.set_conds(positive, negative)
-#     cfg_guider.set_cfg(cfg)
-#     return cfg_guider.sample(noise, latent_image, sampler, sigmas, denoise_mask, callback, disable_pbar, seed)
+def sample(model, noise, positive, negative, cfg, device, sampler, sigmas, model_options={}, latent_image=None, denoise_mask=None, callback=None, disable_pbar=False, seed=None):
+    cfg_guider = CFGGuider(model)
+    cfg_guider.set_conds(positive, negative)
+    cfg_guider.set_cfg(cfg)
+    return cfg_guider.sample(noise, latent_image, sampler, sigmas, denoise_mask, callback, disable_pbar, seed)
 
 
 SAMPLER_NAMES = KSAMPLER_NAMES + ["ddim", "uni_pc", "uni_pc_bh2"]
@@ -1097,68 +1097,68 @@ def sampler_object(name):
         sampler = ksampler(name)
     return sampler
 
-# class KSampler:
-#     SCHEDULERS = SCHEDULER_NAMES
-#     SAMPLERS = SAMPLER_NAMES
-#     DISCARD_PENULTIMATE_SIGMA_SAMPLERS = set(('dpm_2', 'dpm_2_ancestral', 'uni_pc', 'uni_pc_bh2'))
+class KSampler:
+    SCHEDULERS = SCHEDULER_NAMES
+    SAMPLERS = SAMPLER_NAMES
+    DISCARD_PENULTIMATE_SIGMA_SAMPLERS = set(('dpm_2', 'dpm_2_ancestral', 'uni_pc', 'uni_pc_bh2'))
 
-#     def __init__(self, model, steps, device, sampler=None, scheduler=None, denoise=None, model_options={}):
-#         self.model = model
-#         self.device = None  #device
-#         if scheduler not in self.SCHEDULERS:
-#             scheduler = self.SCHEDULERS[0]
-#         if sampler not in self.SAMPLERS:
-#             sampler = self.SAMPLERS[0]
-#         self.scheduler = scheduler
-#         self.sampler = sampler
-#         self.set_steps(steps, denoise)
-#         self.denoise = denoise
-#         self.model_options = model_options
+    def __init__(self, model, steps, device, sampler=None, scheduler=None, denoise=None, model_options={}):
+        self.model = model
+        self.device = None  #device
+        if scheduler not in self.SCHEDULERS:
+            scheduler = self.SCHEDULERS[0]
+        if sampler not in self.SAMPLERS:
+            sampler = self.SAMPLERS[0]
+        self.scheduler = scheduler
+        self.sampler = sampler
+        self.set_steps(steps, denoise)
+        self.denoise = denoise
+        self.model_options = model_options
 
-#     def calculate_sigmas(self, steps):
-#         sigmas = None
+    def calculate_sigmas(self, steps):
+        sigmas = None
 
-#         discard_penultimate_sigma = False
-#         if self.sampler in self.DISCARD_PENULTIMATE_SIGMA_SAMPLERS:
-#             steps += 1
-#             discard_penultimate_sigma = True
+        discard_penultimate_sigma = False
+        if self.sampler in self.DISCARD_PENULTIMATE_SIGMA_SAMPLERS:
+            steps += 1
+            discard_penultimate_sigma = True
 
-#         sigmas = calculate_sigmas(self.model.get_model_object("model_sampling"), self.scheduler, steps)
+        sigmas = calculate_sigmas(self.model.get_model_object("model_sampling"), self.scheduler, steps)
 
-#         if discard_penultimate_sigma:
-#             sigmas = mint.cat([sigmas[:-2], sigmas[-1:]])
-#         return sigmas
+        if discard_penultimate_sigma:
+            sigmas = mint.cat([sigmas[:-2], sigmas[-1:]])
+        return sigmas
 
-#     def set_steps(self, steps, denoise=None):
-#         self.steps = steps
-#         if denoise is None or denoise > 0.9999:
-#             self.sigmas = self.calculate_sigmas(steps)
-#         else:
-#             if denoise <= 0.0:
-#                 self.sigmas = mindspore.Tensor([])
-#             else:
-#                 new_steps = int(steps/denoise)
-#                 sigmas = self.calculate_sigmas(new_steps)
-#                 self.sigmas = sigmas[-(steps + 1):]
+    def set_steps(self, steps, denoise=None):
+        self.steps = steps
+        if denoise is None or denoise > 0.9999:
+            self.sigmas = self.calculate_sigmas(steps)
+        else:
+            if denoise <= 0.0:
+                self.sigmas = mindspore.Tensor([])
+            else:
+                new_steps = int(steps/denoise)
+                sigmas = self.calculate_sigmas(new_steps)
+                self.sigmas = sigmas[-(steps + 1):]
 
-#     def sample(self, noise, positive, negative, cfg, latent_image=None, start_step=None, last_step=None, force_full_denoise=False, denoise_mask=None, sigmas=None, callback=None, disable_pbar=False, seed=None):
-#         if sigmas is None:
-#             sigmas = self.sigmas
+    def sample(self, noise, positive, negative, cfg, latent_image=None, start_step=None, last_step=None, force_full_denoise=False, denoise_mask=None, sigmas=None, callback=None, disable_pbar=False, seed=None):
+        if sigmas is None:
+            sigmas = self.sigmas
 
-#         if last_step is not None and last_step < (len(sigmas) - 1):
-#             sigmas = sigmas[:last_step + 1]
-#             if force_full_denoise:
-#                 sigmas[-1] = 0
+        if last_step is not None and last_step < (len(sigmas) - 1):
+            sigmas = sigmas[:last_step + 1]
+            if force_full_denoise:
+                sigmas[-1] = 0
 
-#         if start_step is not None:
-#             if start_step < (len(sigmas) - 1):
-#                 sigmas = sigmas[start_step:]
-#             else:
-#                 if latent_image is not None:
-#                     return latent_image
-#                 else:
-#                     return mint.zeros_like(noise)
+        if start_step is not None:
+            if start_step < (len(sigmas) - 1):
+                sigmas = sigmas[start_step:]
+            else:
+                if latent_image is not None:
+                    return latent_image
+                else:
+                    return mint.zeros_like(noise)
 
-#         sampler = sampler_object(self.sampler)
+        sampler = sampler_object(self.sampler)
 
-#         return sample(self.model, noise, positive, negative, cfg, None, sampler, sigmas, self.model_options, latent_image=latent_image, denoise_mask=denoise_mask, callback=callback, disable_pbar=disable_pbar, seed=seed)
+        return sample(self.model, noise, positive, negative, cfg, None, sampler, sigmas, self.model_options, latent_image=latent_image, denoise_mask=denoise_mask, callback=callback, disable_pbar=disable_pbar, seed=seed)
