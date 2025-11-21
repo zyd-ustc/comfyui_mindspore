@@ -556,27 +556,27 @@ class LoadLatent:
 #         ckpt_path = folder_paths.get_full_path_or_raise("checkpoints", ckpt_name)
 #         return comfy.sd.load_checkpoint(config_path, ckpt_path, output_vae=True, output_clip=True, embedding_directory=folder_paths.get_folder_paths("embeddings"))
 
-# class CheckpointLoaderSimple:
-#     @classmethod
-#     def INPUT_TYPES(s):
-#         return {
-#             "required": {
-#                 "ckpt_name": (folder_paths.get_filename_list("checkpoints"), {"tooltip": "The name of the checkpoint (model) to load."}),
-#             }
-#         }
-#     RETURN_TYPES = ("MODEL", "CLIP", "VAE")
-#     OUTPUT_TOOLTIPS = ("The model used for denoising latents.",
-#                        "The CLIP model used for encoding text prompts.",
-#                        "The VAE model used for encoding and decoding images to and from latent space.")
-#     FUNCTION = "load_checkpoint"
+class CheckpointLoaderSimple:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "ckpt_name": (folder_paths.get_filename_list("checkpoints"), {"tooltip": "The name of the checkpoint (model) to load."}),
+            }
+        }
+    RETURN_TYPES = ("MODEL", "CLIP", "VAE")
+    OUTPUT_TOOLTIPS = ("The model used for denoising latents.",
+                       "The CLIP model used for encoding text prompts.",
+                       "The VAE model used for encoding and decoding images to and from latent space.")
+    FUNCTION = "load_checkpoint"
 
-#     CATEGORY = "loaders"
-#     DESCRIPTION = "Loads a diffusion model checkpoint, diffusion models are used to denoise latents."
+    CATEGORY = "loaders"
+    DESCRIPTION = "Loads a diffusion model checkpoint, diffusion models are used to denoise latents."
 
-#     def load_checkpoint(self, ckpt_name):
-#         ckpt_path = folder_paths.get_full_path_or_raise("checkpoints", ckpt_name)
-#         out = comfy.sd.load_checkpoint_guess_config(ckpt_path, output_vae=True, output_clip=True, embedding_directory=folder_paths.get_folder_paths("embeddings"))
-#         return out[:3]
+    def load_checkpoint(self, ckpt_name):
+        ckpt_path = folder_paths.get_full_path_or_raise("checkpoints", ckpt_name)
+        out = comfy.sd.load_checkpoint_guess_config(ckpt_path, output_vae=True, output_clip=True, embedding_directory=folder_paths.get_folder_paths("embeddings"))
+        return out[:3]
 
 # class DiffusersLoader:
 #     @classmethod
@@ -1941,7 +1941,7 @@ class PreviewImage(SaveImage):
 
 NODE_CLASS_MAPPINGS = {
     "KSampler": KSampler,
-    # "CheckpointLoaderSimple": CheckpointLoaderSimple,
+    "CheckpointLoaderSimple": CheckpointLoaderSimple,
     "CLIPTextEncode": CLIPTextEncode,
     # "CLIPSetLastLayer": CLIPSetLastLayer,
     "VAEDecode": VAEDecode,
