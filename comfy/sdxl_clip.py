@@ -66,7 +66,7 @@ class SDXLClipModel(mindspore.nn.Cell):
         if "text_model.encoder.layers.30.mlp.fc1.weight" in sd:
             sd = {f"clip_g.transformer.{k}": v for k, v in sd.items()}
             return self.clip_g.load_sd(sd)
-        else "text_model.encoder.layers.1.mlp.fc1.weight" in sd:
+        else:
             sd = {f"clip_l.transformer.{k}": v for k, v in sd.items()}
             return self.clip_l.load_sd(sd)
 
