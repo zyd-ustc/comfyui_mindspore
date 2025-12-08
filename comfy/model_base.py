@@ -494,7 +494,7 @@ class SDXL(BaseModel):
         out.append(self.embedder(mindspore.tensor([target_height])))
         out.append(self.embedder(mindspore.tensor([target_width])))
         flat = mint.flatten(mint.cat(out)).unsqueeze(dim=0).repeat(clip_pooled.shape[0], 1)
-        return mint.cat((clip_pooled.to(flat.device), flat), dim=1)
+        return mint.cat((clip_pooled, flat), dim=1)
 
 
 # class SVD_img2vid(BaseModel):
