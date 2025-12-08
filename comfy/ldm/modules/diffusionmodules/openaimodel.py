@@ -440,6 +440,7 @@ class UNetModel(nn.Cell):
         disable_temporal_crossattention=False,
         max_ddpm_temb_period=10000,
         attn_precision=None,
+        device=None,
         operations=ops,
     ):
         super().__init__()
