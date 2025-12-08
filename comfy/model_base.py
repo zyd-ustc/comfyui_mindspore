@@ -438,11 +438,11 @@ class SD21UNCLIP(BaseModel):
         else:
             return unclip_adm(unclip_conditioning, None, self.noise_augmentor, kwargs.get("unclip_noise_augment_merge", 0.05), kwargs.get("seed", 0) - 10)
 
-# def sdxl_pooled(args, noise_augmentor):
-#     if "unclip_conditioning" in args:
-#         return unclip_adm(args.get("unclip_conditioning", None), args["device"], noise_augmentor, seed=args.get("seed", 0) - 10)[:,:1280]
-#     else:
-#         return args["pooled_output"]
+def sdxl_pooled(args, noise_augmentor):
+    if "unclip_conditioning" in args:
+        return unclip_adm(args.get("unclip_conditioning", None), args["device"], noise_augmentor, seed=args.get("seed", 0) - 10)[:,:1280]
+    else:
+        return args["pooled_output"]
 
 # class SDXLRefiner(BaseModel):
 #     def __init__(self, model_config, model_type=ModelType.EPS, device=None):
