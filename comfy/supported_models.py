@@ -182,77 +182,77 @@ from . import diffusers_convert
 #     def clip_target(self, state_dict={}):
 #         return supported_models_base.ClipTarget(sdxl_clip.SDXLTokenizer, sdxl_clip.SDXLRefinerClipModel)
 
-# class SDXL(supported_models_base.BASE):
-#     unet_config = {
-#         "model_channels": 320,
-#         "use_linear_in_transformer": True,
-#         "transformer_depth": [0, 0, 2, 2, 10, 10],
-#         "context_dim": 2048,
-#         "adm_in_channels": 2816,
-#         "use_temporal_attention": False,
-#     }
+class SDXL(supported_models_base.BASE):
+    unet_config = {
+        "model_channels": 320,
+        "use_linear_in_transformer": True,
+        "transformer_depth": [0, 0, 2, 2, 10, 10],
+        "context_dim": 2048,
+        "adm_in_channels": 2816,
+        "use_temporal_attention": False,
+    }
 
-#     latent_format = latent_formats.SDXL
+    latent_format = latent_formats.SDXL
 
-#     memory_usage_factor = 0.8
+    memory_usage_factor = 0.8
 
-#     def model_type(self, state_dict, prefix=""):
-#         if 'edm_mean' in state_dict and 'edm_std' in state_dict: #Playground V2.5
-#             self.latent_format = latent_formats.SDXL_Playground_2_5()
-#             self.sampling_settings["sigma_data"] = 0.5
-#             self.sampling_settings["sigma_max"] = 80.0
-#             self.sampling_settings["sigma_min"] = 0.002
-#             return model_base.ModelType.EDM
-#         elif "edm_vpred.sigma_max" in state_dict:
-#             self.sampling_settings["sigma_max"] = float(state_dict["edm_vpred.sigma_max"].item())
-#             if "edm_vpred.sigma_min" in state_dict:
-#                 self.sampling_settings["sigma_min"] = float(state_dict["edm_vpred.sigma_min"].item())
-#             return model_base.ModelType.V_PREDICTION_EDM
-#         elif "v_pred" in state_dict:
-#             if "ztsnr" in state_dict: #Some zsnr anime checkpoints
-#                 self.sampling_settings["zsnr"] = True
-#             return model_base.ModelType.V_PREDICTION
-#         else:
-#             return model_base.ModelType.EPS
+    def model_type(self, state_dict, prefix=""):
+        if 'edm_mean' in state_dict and 'edm_std' in state_dict: #Playground V2.5
+            self.latent_format = latent_formats.SDXL_Playground_2_5()
+            self.sampling_settings["sigma_data"] = 0.5
+            self.sampling_settings["sigma_max"] = 80.0
+            self.sampling_settings["sigma_min"] = 0.002
+            return model_base.ModelType.EDM
+        elif "edm_vpred.sigma_max" in state_dict:
+            self.sampling_settings["sigma_max"] = float(state_dict["edm_vpred.sigma_max"].item())
+            if "edm_vpred.sigma_min" in state_dict:
+                self.sampling_settings["sigma_min"] = float(state_dict["edm_vpred.sigma_min"].item())
+            return model_base.ModelType.V_PREDICTION_EDM
+        elif "v_pred" in state_dict:
+            if "ztsnr" in state_dict: #Some zsnr anime checkpoints
+                self.sampling_settings["zsnr"] = True
+            return model_base.ModelType.V_PREDICTION
+        else:
+            return model_base.ModelType.EPS
 
-#     def get_model(self, state_dict, prefix="", device=None):
-#         out = model_base.SDXL(self, model_type=self.model_type(state_dict, prefix), device=device)
-#         if self.inpaint_model():
-#             out.set_inpaint()
-#         return out
+    def get_model(self, state_dict, prefix="", device=None):
+        out = model_base.SDXL(self, model_type=self.model_type(state_dict, prefix), device=device)
+        if self.inpaint_model():
+            out.set_inpaint()
+        return out
 
-#     def process_clip_state_dict(self, state_dict):
-#         keys_to_replace = {}
-#         replace_prefix = {}
+    def process_clip_state_dict(self, state_dict):
+        keys_to_replace = {}
+        replace_prefix = {}
 
-#         replace_prefix["conditioner.embedders.0.transformer.text_model"] = "clip_l.transformer.text_model"
-#         replace_prefix["conditioner.embedders.1.model."] = "clip_g."
-#         state_dict = utils.state_dict_prefix_replace(state_dict, replace_prefix, filter_keys=True)
+        replace_prefix["conditioner.embedders.0.transformer.text_model"] = "clip_l.transformer.text_model"
+        replace_prefix["conditioner.embedders.1.model."] = "clip_g."
+        state_dict = utils.state_dict_prefix_replace(state_dict, replace_prefix, filter_keys=True)
 
-#         state_dict = utils.state_dict_key_replace(state_dict, keys_to_replace)
-#         state_dict = utils.clip_text_transformers_convert(state_dict, "clip_g.", "clip_g.transformer.")
-#         return state_dict
+        state_dict = utils.state_dict_key_replace(state_dict, keys_to_replace)
+        state_dict = utils.clip_text_transformers_convert(state_dict, "clip_g.", "clip_g.transformer.")
+        return state_dict
 
-#     def process_clip_state_dict_for_saving(self, state_dict):
-#         replace_prefix = {}
-#         state_dict_g = diffusers_convert.convert_text_enc_state_dict_v20(state_dict, "clip_g")
-#         for k in state_dict:
-#             if k.startswith("clip_l"):
-#                 state_dict_g[k] = state_dict[k]
+    def process_clip_state_dict_for_saving(self, state_dict):
+        replace_prefix = {}
+        state_dict_g = diffusers_convert.convert_text_enc_state_dict_v20(state_dict, "clip_g")
+        for k in state_dict:
+            if k.startswith("clip_l"):
+                state_dict_g[k] = state_dict[k]
 
-#         state_dict_g["clip_l.transformer.text_model.embeddings.position_ids"] = torch.arange(77).expand((1, -1))
-#         pop_keys = ["clip_l.transformer.text_projection.weight", "clip_l.logit_scale"]
-#         for p in pop_keys:
-#             if p in state_dict_g:
-#                 state_dict_g.pop(p)
+        state_dict_g["clip_l.transformer.text_model.embeddings.position_ids"] = mint.arange(77).expand((1, -1))
+        pop_keys = ["clip_l.transformer.text_projection.weight", "clip_l.logit_scale"]
+        for p in pop_keys:
+            if p in state_dict_g:
+                state_dict_g.pop(p)
 
-#         replace_prefix["clip_g"] = "conditioner.embedders.1.model"
-#         replace_prefix["clip_l"] = "conditioner.embedders.0"
-#         state_dict_g = utils.state_dict_prefix_replace(state_dict_g, replace_prefix)
-#         return state_dict_g
+        replace_prefix["clip_g"] = "conditioner.embedders.1.model"
+        replace_prefix["clip_l"] = "conditioner.embedders.0"
+        state_dict_g = utils.state_dict_prefix_replace(state_dict_g, replace_prefix)
+        return state_dict_g
 
-#     def clip_target(self, state_dict={}):
-#         return supported_models_base.ClipTarget(sdxl_clip.SDXLTokenizer, sdxl_clip.SDXLClipModel)
+    def clip_target(self, state_dict={}):
+        return supported_models_base.ClipTarget(sdxl_clip.SDXLTokenizer, sdxl_clip.SDXLClipModel)
 
 # class SSD1B(SDXL):
 #     unet_config = {
@@ -274,25 +274,25 @@ from . import diffusers_convert
 #         "use_temporal_attention": False,
 #     }
 
-# class KOALA_700M(SDXL):
-#     unet_config = {
-#         "model_channels": 320,
-#         "use_linear_in_transformer": True,
-#         "transformer_depth": [0, 2, 5],
-#         "context_dim": 2048,
-#         "adm_in_channels": 2816,
-#         "use_temporal_attention": False,
-#     }
+class KOALA_700M(SDXL):
+    unet_config = {
+        "model_channels": 320,
+        "use_linear_in_transformer": True,
+        "transformer_depth": [0, 2, 5],
+        "context_dim": 2048,
+        "adm_in_channels": 2816,
+        "use_temporal_attention": False,
+    }
 
-# class KOALA_1B(SDXL):
-#     unet_config = {
-#         "model_channels": 320,
-#         "use_linear_in_transformer": True,
-#         "transformer_depth": [0, 2, 6],
-#         "context_dim": 2048,
-#         "adm_in_channels": 2816,
-#         "use_temporal_attention": False,
-#     }
+class KOALA_1B(SDXL):
+    unet_config = {
+        "model_channels": 320,
+        "use_linear_in_transformer": True,
+        "transformer_depth": [0, 2, 6],
+        "context_dim": 2048,
+        "adm_in_channels": 2816,
+        "use_temporal_attention": False,
+    }
 
 # class SVD_img2vid(supported_models_base.BASE):
 #     unet_config = {
@@ -1380,4 +1380,4 @@ class QwenImage(supported_models_base.BASE):
 
 # models += [SVD_img2vid]
 
-models = [Flux, QwenImage, SD3]
+models = [Flux, QwenImage, SD3, KOALA_700M, KOALA_1B]
