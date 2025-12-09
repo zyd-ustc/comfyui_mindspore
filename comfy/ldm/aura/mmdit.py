@@ -316,6 +316,7 @@ class MMDiT(ms.nn.Cell):
         global_conddim=3072,
         cond_seq_dim=2048,
         max_seq=32 * 32,
+        device=None,
         dtype=None,
         operations=None,
     ):
