@@ -212,14 +212,14 @@ class MMDiTBlock(ms.nn.Cell):
         cres, xres = c, x
 
         cshift_msa, cscale_msa, cgate_msa, cshift_mlp, cscale_mlp, cgate_mlp = (
-            self.modC(global_cond).chunk(6, dim=1)
+            mint.chunk(self.modC(global_cond), 6, dim=1)
         )
 
         c = modulate(self.normC1(c), cshift_msa, cscale_msa)
 
         # xpath
         xshift_msa, xscale_msa, xgate_msa, xshift_mlp, xscale_mlp, xgate_mlp = (
-            self.modX(global_cond).chunk(6, dim=1)
+            mint.chunk(self.modX(global_cond), 6, dim=1)
         )
 
         x = modulate(self.normX1(x), xshift_msa, xscale_msa)
@@ -257,9 +257,9 @@ class DiTBlock(ms.nn.Cell):
     #@torch.compile()
     def construct(self, cx, global_cond, transformer_options={}, **kwargs):
         cxres = cx
-        shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = self.modCX(
-            global_cond
-        ).chunk(6, dim=1)
+        shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = mint.chunk(
+            self.modCX(global_cond), 6, dim=1
+        )
         cx = modulate(self.norm1(cx), shift_msa, scale_msa)
         cx = self.attn(cx, transformer_options=transformer_options)
         cx = self.norm2(cxres + gate_msa.unsqueeze(1) * cx)
@@ -316,7 +316,6 @@ class MMDiT(ms.nn.Cell):
         global_conddim=3072,
         cond_seq_dim=2048,
         max_seq=32 * 32,
-        device=None,
         dtype=None,
         operations=None,
     ):
@@ -498,7 +497,7 @@ class MMDiT(ms.nn.Cell):
 
             x = cx[:, c_len:]
 
-        fshift, fscale = self.modF(global_cond).chunk(2, dim=1)
+        fshift, fscale = mint.chunk(self.modF(global_cond), 2, dim=1)
 
         x = modulate(x, fshift, fscale)
         x = self.final_linear(x)
