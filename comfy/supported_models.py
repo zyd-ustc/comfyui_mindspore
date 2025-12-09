@@ -1380,4 +1380,4 @@ class QwenImage(supported_models_base.BASE):
 
 # models += [SVD_img2vid]
 
-models = [Flux, QwenImage, SD3, KOALA_700M, KOALA_1B]
+models = [Flux, QwenImage, SD3, KOALA_700M, KOALA_1B, AuraFlow]
