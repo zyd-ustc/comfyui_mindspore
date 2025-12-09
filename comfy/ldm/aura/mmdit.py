@@ -460,7 +460,7 @@ class MMDiT(ms.nn.Cell):
         t = timestep
 
         c = self.cond_seq_linear(c_seq)  # B, T_c, D
-        c = mint.cat([comfy.ops.cast_to_input(self.register_tokens, c).repeat(c.size(0), 1, 1), c], dim=1)
+        c = mint.cat([comfy.ops.cast_to_input(self.register_tokens, c).repeat(c.shape[0], 1, 1), c], dim=1)
 
         global_cond = self.t_embedder(t, x.dtype)  # B, D
 
@@ -482,7 +482,7 @@ class MMDiT(ms.nn.Cell):
                     c, x = layer(c, x, global_cond, transformer_options=transformer_options, **kwargs)
 
         if len(self.single_layers) > 0:
-            c_len = c.size(1)
+            c_len = c.shape[1]
             cx = mint.cat([c, x], dim=1)
             for i, layer in enumerate(self.single_layers):
                 if ("single_block", i) in blocks_replace:
