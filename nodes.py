@@ -1998,7 +1998,7 @@ NODE_CLASS_MAPPINGS = {
     # "GLIGENTextBoxApply": GLIGENTextBoxApply,
     # "InpaintModelConditioning": InpaintModelConditioning,
 
-    # "CheckpointLoader": CheckpointLoader,
+    "CheckpointLoader": CheckpointLoader,
     # "DiffusersLoader": DiffusersLoader,
 
     # "LoadLatent": LoadLatent,
