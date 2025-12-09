@@ -186,12 +186,12 @@ class MMDiTBlock(ms.nn.Cell):
         if not is_last:
             self.mlpC = MLP(dim, hidden_dim=dim * 4, dtype=dtype, operations=operations)
             self.modC = ms.nn.SequentialCell(
-                F.SiLU(),
+                mint.nn.SiLU(),
                 operations.Linear(global_conddim, 6 * dim, bias=False, dtype=dtype),
             )
         else:
             self.modC = ms.nn.SequentialCell(
-                F.SiLU(),
+                mint.nn.SiLU(),
                 operations.Linear(global_conddim, 2 * dim, bias=False, dtype=dtype),
             )
 
@@ -247,7 +247,7 @@ class DiTBlock(ms.nn.Cell):
         self.norm2 = operations.LayerNorm(dim, elementwise_affine=False, dtype=dtype)
 
         self.modCX = ms.nn.SequentialCell(
-            F.SiLU(),
+            mint.nn.SiLU(),
             operations.Linear(global_conddim, 6 * dim, bias=False, dtype=dtype),
         )
 
@@ -355,7 +355,7 @@ class MMDiT(ms.nn.Cell):
         )
 
         self.modF = ms.nn.SequentialCell(
-            F.SiLU(),
+            mint.nn.SiLU(),
             operations.Linear(global_conddim, 2 * dim, bias=False, dtype=dtype),
         )
 
