@@ -240,7 +240,9 @@ class ResBlock(TimestepBlock):
         # return checkpoint(
         #     self._forward, (x, emb), self.get_parameters(), self.use_checkpoint
         # )
-        return mindspore.recompute(self._forward, x, emb)
+        #FIXME：Recompute function now only support block which inherited for Cell
+        #return mindspore.recompute(self._forward, x, emb)
+        return self._forward(x, emb)
 
 
     def _forward(self, x, emb):
