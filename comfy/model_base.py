@@ -26,7 +26,7 @@ from comfy.ldm.modules.encoders.noise_aug_modules import CLIPEmbeddingNoiseAugme
 # from comfy.ldm.modules.diffusionmodules.upscaling import ImageConcatWithNoiseAugmentation
 from comfy.ldm.modules.diffusionmodules.mmdit import OpenAISignatureMMDITWrapper
 # import comfy.ldm.genmo.joint_model.asymm_models_joint
-# import comfy.ldm.aura.mmdit
+import comfy.ldm.aura.mmdit
 # import comfy.ldm.pixart.pixartms
 # import comfy.ldm.hydit.models
 # import comfy.ldm.audio.dit
@@ -749,16 +749,16 @@ class SD3(BaseModel):
         return out
 
 
-# class AuraFlow(BaseModel):
-#     def __init__(self, model_config, model_type=ModelType.FLOW, device=None):
-#         super().__init__(model_config, model_type, device=device, unet_model=comfy.ldm.aura.mmdit.MMDiT)
+class AuraFlow(BaseModel):
+    def __init__(self, model_config, model_type=ModelType.FLOW, device=None):
+        super().__init__(model_config, model_type, device=device, unet_model=comfy.ldm.aura.mmdit.MMDiT)
 
-#     def extra_conds(self, **kwargs):
-#         out = super().extra_conds(**kwargs)
-#         cross_attn = kwargs.get("cross_attn", None)
-#         if cross_attn is not None:
-#             out['c_crossattn'] = comfy.conds.CONDRegular(cross_attn)
-#         return out
+    def extra_conds(self, **kwargs):
+        out = super().extra_conds(**kwargs)
+        cross_attn = kwargs.get("cross_attn", None)
+        if cross_attn is not None:
+            out['c_crossattn'] = comfy.conds.CONDRegular(cross_attn)
+        return out
 
 
 # class StableAudio1(BaseModel):
