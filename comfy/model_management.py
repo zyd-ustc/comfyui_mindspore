@@ -807,8 +807,8 @@ def get_free_memory(dev=None, mindspore_free_too=False):
         mem_free_mindspore = mem_free_total
     else:
         stats = mindspore.runtime.memory_stats()
-        mem_active = stats['total_reserved_memory']
-        mem_reserved = stats['total_allocated_memory']
+        mem_reserved = stats['total_reserved_memory']
+        mem_active = stats['total_allocated_memory']
         mem_free_total = mem_reserved - mem_active
         mem_free_mindspore = mem_free_total
 
