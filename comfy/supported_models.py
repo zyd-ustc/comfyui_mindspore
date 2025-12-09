@@ -9,7 +9,7 @@ from . import sdxl_clip
 # import comfy.text_encoders.sd2_clip
 import comfy.text_encoders.sd3_clip
 # import comfy.text_encoders.sa_t5
-# import comfy.text_encoders.aura_t5
+import comfy.text_encoders.aura_t5
 # import comfy.text_encoders.pixart_t5
 # import comfy.text_encoders.hydit
 import comfy.text_encoders.flux
@@ -595,28 +595,28 @@ class SD3(supported_models_base.BASE):
 #     def clip_target(self, state_dict={}):
 #         return supported_models_base.ClipTarget(comfy.text_encoders.sa_t5.SAT5Tokenizer, comfy.text_encoders.sa_t5.SAT5Model)
 
-# class AuraFlow(supported_models_base.BASE):
-#     unet_config = {
-#         "cond_seq_dim": 2048,
-#     }
+class AuraFlow(supported_models_base.BASE):
+    unet_config = {
+        "cond_seq_dim": 2048,
+    }
 
-#     sampling_settings = {
-#         "multiplier": 1.0,
-#         "shift": 1.73,
-#     }
+    sampling_settings = {
+        "multiplier": 1.0,
+        "shift": 1.73,
+    }
 
-#     unet_extra_config = {}
-#     latent_format = latent_formats.SDXL
+    unet_extra_config = {}
+    latent_format = latent_formats.SDXL
 
-#     vae_key_prefix = ["vae."]
-#     text_encoder_key_prefix = ["text_encoders."]
+    vae_key_prefix = ["vae."]
+    text_encoder_key_prefix = ["text_encoders."]
 
-#     def get_model(self, state_dict, prefix="", device=None):
-#         out = model_base.AuraFlow(self, device=device)
-#         return out
+    def get_model(self, state_dict, prefix="", device=None):
+        out = model_base.AuraFlow(self, device=device)
+        return out
 
-#     def clip_target(self, state_dict={}):
-#         return supported_models_base.ClipTarget(comfy.text_encoders.aura_t5.AuraT5Tokenizer, comfy.text_encoders.aura_t5.AuraT5Model)
+    def clip_target(self, state_dict={}):
+        return supported_models_base.ClipTarget(comfy.text_encoders.aura_t5.AuraT5Tokenizer, comfy.text_encoders.aura_t5.AuraT5Model)
 
 # class PixArtAlpha(supported_models_base.BASE):
 #     unet_config = {
