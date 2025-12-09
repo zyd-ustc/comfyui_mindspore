@@ -195,19 +195,19 @@ class MMDiTBlock(ms.nn.Cell):
                 operations.Linear(global_conddim, 2 * dim, bias=False, dtype=dtype),
             )
 
-        self.normX1 = operations.LayerNorm(dim, elementwise_affine=False, dtype=dtyp)
+        self.normX1 = operations.LayerNorm(dim, elementwise_affine=False, dtype=dtype)
         self.normX2 = operations.LayerNorm(dim, elementwise_affine=False, dtype=dtype)
         self.mlpX = MLP(dim, hidden_dim=dim * 4, dtype=dtype, operations=operations)
         self.modX = ms.nn.SequentialCell(
-            nn.SiLU(),
-            operations.Linear(global_conddim, 6 * dim, bias=False, dtype=dtype,
+            mint.nn.SiLU(),
+            operations.Linear(global_conddim, 6 * dim, bias=False, dtype=dtype)
         )
-
+        
         self.attn = DoubleAttention(dim, heads, dtype=dtype, operations=operations)
         self.is_last = is_last
 
     #@torch.compile()
-    def construct(ewself, c, x, global_cond, transformer_options={}, **kwargs):
+    def construct(self, c, x, global_cond, transformer_options={}, **kwargs):
 
         cres, xres = c, x
 
@@ -353,7 +353,7 @@ class MMDiT(ms.nn.Cell):
             dim, patch_size * patch_size * out_channels, bias=False, dtype=dtype
         )
 
-        self.modF = nn.Sequential(
+        self.modF = ms.nn.SequentialCell(
             F.SiLU(),
             operations.Linear(global_conddim, 2 * dim, bias=False, dtype=dtype),
         )
